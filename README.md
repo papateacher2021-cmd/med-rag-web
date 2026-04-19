@@ -1,10 +1,10 @@
-⚓ MED RAG Agent: Regulatory Expert System
+##**⚓ MED RAG Agent: Regulatory Expert System**
 
 This repository hosts a Retrieval-Augmented Generation (RAG) application designed to navigate complex medical device regulations (MED). It allows users to query technical documentation using natural language, backed by the power of Google Gemini and ChromaDB.
 🚀 Development Journey & Architecture
 
 The project followed a rigorous 4-stage development lifecycle to ensure scalability and cloud compatibility:
-1. Proof of Concept (Google Colab)
+**1. Proof of Concept (Google Colab)**
 
     Objective: Validate the core RAG logic.
 
@@ -12,7 +12,7 @@ The project followed a rigorous 4-stage development lifecycle to ensure scalabil
 
     Outcome: Successfully demonstrated that a Large Language Model (LLM) could accurately retrieve context from specific regulatory PDFs.
 
-2. Local Environment & Virtualization (Linux/Ubuntu)
+**2. Local Environment & Virtualization (Linux/Ubuntu)**
 
     Objective: Transition from notebook to a structured application.
 
@@ -20,7 +20,7 @@ The project followed a rigorous 4-stage development lifecycle to ensure scalabil
 
     Milestone: Implemented a persistent ChromaDB vector store and integrated the Streamlit UI. Testing was performed locally to ensure robust document processing.
 
-3. Containerization Logic & Cloud Readiness
+**3. Containerization Logic & Cloud Readiness**
 
     Objective: Prepare the application for universal deployment.
 
@@ -28,7 +28,7 @@ The project followed a rigorous 4-stage development lifecycle to ensure scalabil
 
     Infrastructure: Refined the code to handle cloud-specific constraints, such as port binding and environment variable management for API keys.
 
-4. Continuous Deployment (GitHub & Render)
+**4. Continuous Deployment (GitHub & Render)**
 
     Objective: Live operation and public access.
 
@@ -36,7 +36,7 @@ The project followed a rigorous 4-stage development lifecycle to ensure scalabil
 
     Live App: https://med-rag-web.onrender.com
 
-🛠️ Tech Stack
+**🛠️ Tech Stack**
 
     LLM: Google Gemini 1.5 Flash (via API)
 
@@ -50,7 +50,7 @@ The project followed a rigorous 4-stage development lifecycle to ensure scalabil
 
     Cloud Hosting: Render
 
-📋 How to Use
+**📋 How to Use**
 
     Query: Ask a question regarding Medical Device Regulations.
 
