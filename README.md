@@ -2,7 +2,7 @@
 
 **⚓ MED RAG Agent: Regulatory Expert System**
 
-This repository hosts a Retrieval-Augmented Generation (RAG) application designed to navigate complex medical device regulations (MED). It allows users to query technical documentation using natural language, backed by the power of Google Gemini and ChromaDB.
+This repository hosts a Retrieval-Augmented Generation (RAG) application designed to navigate complex European Union Marine Equipment Directive EU/2014/90  (MED). It allows users to query technical documentation using natural language, backed by the power of Google Gemini and ChromaDB.
 🚀 Development Journey & Architecture
 
 The project followed a rigorous 4-stage development lifecycle to ensure scalability and cloud compatibility:
@@ -55,7 +55,7 @@ The project followed a rigorous 4-stage development lifecycle to ensure scalabil
 
 **📋 How to Use**
 
-    Query: Ask a question regarding Medical Device Regulations.
+    Query: Ask a question regarding EU Marine Equipment Directive.
 
     Retrieve: The system searches the vectorized database for relevant excerpts.
 
