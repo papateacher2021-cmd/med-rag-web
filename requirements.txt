@@ -10,3 +10,5 @@ pysqlite3-binary
 sentence-transformers
 pypdf
 huggingface_hub
+tokenizers==0.19.1
+transformers==4.41.2
