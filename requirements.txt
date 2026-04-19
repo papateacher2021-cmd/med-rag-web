@@ -5,3 +5,4 @@ chromadb
 pypdf
 sentence-transformers
 google-generativeai
+pysqlite3-binary
