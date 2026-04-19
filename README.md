@@ -1,9 +1,12 @@
-##**⚓ MED RAG Agent: Regulatory Expert System**
+**AUTHOR: FRANCISCO BROISSIN**
+
+**⚓ MED RAG Agent: Regulatory Expert System**
 
 This repository hosts a Retrieval-Augmented Generation (RAG) application designed to navigate complex medical device regulations (MED). It allows users to query technical documentation using natural language, backed by the power of Google Gemini and ChromaDB.
 🚀 Development Journey & Architecture
 
 The project followed a rigorous 4-stage development lifecycle to ensure scalability and cloud compatibility:
+
 **1. Proof of Concept (Google Colab)**
 
     Objective: Validate the core RAG logic.
