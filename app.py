@@ -80,7 +80,7 @@ def inicializar_sistema():
     		embedding_function=embeddings,
     		collection_name="langchain"  # <--- Añade esto
 	)
-	retriever = vectorstore.as_retriever(search_kwargs={"k": 12})
+	retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
         
         # 4. Modelo LLM
         llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=api_key, temperature=0.1)
