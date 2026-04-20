@@ -74,8 +74,13 @@ def inicializar_sistema():
             return None, f"❌ Carpeta '{persist_dir}' no encontrada. Archivos: {os.listdir(base_path)}"
 
         # 3. Carga de DB
-        vectorstore = Chroma(persist_directory=persist_dir, embedding_function=embeddings)
-        retriever = vectorstore.as_retriever(search_kwargs={"k": 12})
+        # vectorstore = Chroma(persist_directory=persist_dir, embedding_function=embeddings)
+        vectorstore = Chroma(
+    		persist_directory=persist_dir, 
+    		embedding_function=embeddings,
+    		collection_name="langchain"  # <--- Añade esto
+	)
+	retriever = vectorstore.as_retriever(search_kwargs={"k": 12})
         
         # 4. Modelo LLM
         llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=api_key, temperature=0.1)
