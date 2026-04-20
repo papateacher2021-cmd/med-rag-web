@@ -66,22 +66,55 @@ if not api_key:
     st.error("⚠️ No se encontró la GOOGLE_API_KEY. Por favor, configúrala.")
     st.stop()
 
+
+
 @st.cache_resource
 def inicializar_sistema():
-    # Embeddings
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    
-    # Base de Datos
-    persist_dir = "./chroma_db"
-    if not os.path.exists(persist_dir):
-        st.error(f"❌ No se encuentra la carpeta '{persist_dir}'.")
-        st.stop()
+    try:
+        # 1. Definir ruta absoluta para evitar errores en Linux (Render)
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        persist_dir = os.path.join(base_path, "chroma_db")
         
-    vectorstore = Chroma(persist_directory=persist_dir, embedding_function=embeddings)
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 12})
+        # 2. Embeddings (Ligeros para que no pesen en la RAM)
+        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        
+        # 3. Verificación de Carpeta (Sin st.stop para no colapsar el arranque)
+        if not os.path.exists(persist_dir):
+            return None, f"❌ Carpeta '{persist_dir}' no encontrada. Archivos en raíz: {os.listdir(base_path)}"
+
+        # 4. Carga de Base de Datos
+        vectorstore = Chroma(persist_directory=persist_dir, embedding_function=embeddings)
+        retriever = vectorstore.as_retriever(search_kwargs={"k": 12})
+        
+        # 5. Modelo LLM (Asegúrate de que 'api_key' esté definida o usa os.getenv)
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash", # Nota: corregí a 2.0 que es la estable actual
+            google_api_key=api_key, 
+            temperature=0.1
+        )
+        
+        return {"retriever": retriever, "llm": llm}, "✅ Sistema listo"
     
-    # Modelo LLM
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key, temperature=0.1)
+    except Exception as e:
+        return None, f"❌ Error crítico: {str(e)}"
+
+# CUERPO PRINCIPAL DE LA APP (Aquí es donde Streamlit empieza a dibujar la web)
+# Va después de que termine la función anterior, pegado al margen izquierdo (sin sangría)
+
+st.title("Pancho's MED Virtual Agent 🩺")
+
+# Llamamos a la función y guardamos lo que nos devuelve
+resultado, mensaje = inicializar_sistema()
+
+if resultado is None:
+    st.error(mensaje)
+    # Si falla, puedo  poner un st.stop() aquí para que no intente seguir
+    st.stop() 
+else:
+    # Si todo va bien, sacamos el retriever y el llm para usarlos luego
+    retriever = resultado["retriever"]
+    llm = resultado["llm"]
+    st.success(mensaje)
     
     # Prompt Template
     template = """I am the Pancho's MED Virtual Agent, a technical expert in the Marine Equipment Directive (MED) and MarED Recommendations.
