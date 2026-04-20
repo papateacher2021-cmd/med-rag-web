@@ -12,6 +12,7 @@ from langchain.prompts import PromptTemplate
 import google.generativeai as genai
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+import shutil  # Añade esto al principio del archivo
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="MED Virtual Agent", page_icon="🚢", layout="wide")
@@ -37,24 +38,30 @@ with st.sidebar:
 
 
 # --- 1. FUNCIÓN DE APOYO (FUERA) ---
+
 def get_vector_db(embeddings):
     CHROMA_PATH = "./chroma_db"
     DOCS_PATH = "./documentos"
     
-    #intento de carga	
-    if os.path.exists(CHROMA_PATH) and os.listdir(CHROMA_PATH):
+    # Intento de carga
+    if os.path.exists(CHROMA_PATH):
         try:
+            # Si existe, intentamos cargarla
             db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
+            # Prueba de fuego: intentamos una operación simple
             db.get(limit=1) 
             print("✅ Base de datos física cargada.")
             return db
         except Exception as e:
-            print(f"⚠️ Fallo en carga física: {e}. Reconstruyendo...")
+            print(f"⚠️ Error detectado en la DB: {e}. Limpiando y reconstruyendo...")
+            # ELIMINAMOS LA CARPETA CORRUPTA (Aquí está la magia)
+            shutil.rmtree(CHROMA_PATH, ignore_errors=True)
     
-    # Reconstrucción si lo anterior falla
+    # Reconstrucción desde PDFs (Plan de Rescate)
     if not os.path.exists(DOCS_PATH) or not os.listdir(DOCS_PATH):
         raise Exception("No hay PDFs en la carpeta 'documentos' para reconstruir.")
 
+    print("🛠️ Creando nueva base de datos desde PDFs...")
     loaders = [PyPDFLoader(os.path.join(DOCS_PATH, f)) for f in os.listdir(DOCS_PATH) if f.endswith('.pdf')]
     docs = []
     for loader in loaders:
@@ -63,9 +70,11 @@ def get_vector_db(embeddings):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     chunks = text_splitter.split_documents(docs)
     
+    # Creamos la DB limpia
     db = Chroma.from_documents(chunks, embeddings, persist_directory=CHROMA_PATH)
-    print("✅ Base de datos creada desde PDFs.")
+    print("✅ Base de datos creada desde PDFs con éxito.")
     return db
+
 
 # --- 2. FUNCIÓN PRINCIPAL ---
 @st.cache_resource
