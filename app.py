@@ -10,6 +10,8 @@ from langchain_community.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 import google.generativeai as genai
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="MED Virtual Agent", page_icon="🚢", layout="wide")
@@ -27,44 +29,69 @@ with st.sidebar:
     st.title("⚓ MED Virtual Agent")
     st.markdown("---")
     st.info("""
-    **📜 Usage Note:** I am a RAG-based MED Expert. Optimized for **semantic analysis** of the MED Directive.
+    **📜 Usage Note:** I am a RAG-based MED Expert. My Master **Francisco Broissin** has designed me, created and trained, and thus I'm optimized for **semantic analysis** of the MED Directive.
     """)
 
 # --- INICIALIZACIÓN DEL SISTEMA ---
+
+
+# --- 1. FUNCIÓN DE APOYO (FUERA) ---
+def get_vector_db(embeddings):
+    CHROMA_PATH = "./chroma_db"
+    DOCS_PATH = "./documentos"
+    
+    #intento de carga	
+    if os.path.exists(CHROMA_PATH) and os.listdir(CHROMA_PATH):
+        try:
+            db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
+            db.get(limit=1) 
+            print("✅ Base de datos física cargada.")
+            return db
+        except Exception as e:
+            print(f"⚠️ Fallo en carga física: {e}. Reconstruyendo...")
+    
+    # Reconstrucción si lo anterior falla
+    if not os.path.exists(DOCS_PATH) or not os.listdir(DOCS_PATH):
+        raise Exception("No hay PDFs en la carpeta 'documentos' para reconstruir.")
+
+    loaders = [PyPDFLoader(os.path.join(DOCS_PATH, f)) for f in os.listdir(DOCS_PATH) if f.endswith('.pdf')]
+    docs = []
+    for loader in loaders:
+        docs.extend(loader.load())
+    
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    chunks = text_splitter.split_documents(docs)
+    
+    db = Chroma.from_documents(chunks, embeddings, persist_directory=CHROMA_PATH)
+    print("✅ Base de datos creada desde PDFs.")
+    return db
+
+# --- 2. FUNCIÓN PRINCIPAL ---
 @st.cache_resource
 def inicializar_sistema():
     try:
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        persist_dir = os.path.join(base_path, "chroma_db")
-        
-        # 1. Embeddings
+        # A. Configuración inicial
+        api_key = st.secrets["GOOGLE_API_KEY"]
         embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        
-        # 2. Verificación de Carpeta
-        if not os.path.exists(persist_dir):
-            return None, f"❌ Carpeta '{persist_dir}' no encontrada."
 
-        # 3. Carga de DB (con espacios consistentes)
-        vectorstore = Chroma(
-            persist_directory=persist_dir, 
-            embedding_function=embeddings,
-            collection_name="langchain"
-        )
+        # B. Obtener la Base de Datos (usando nuestra función de apoyo)
+        vectorstore = get_vector_db(embeddings)
         
+        # C. Configurar el Retriever
         retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-        
-        # 4. Modelo LLM
+
+        # D. Configurar el Modelo LLM (Gemini)
         llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=api_key, temperature=0.1)
-        
-        # 5. Prompt Template
+
+        # E. Prompt Template
         template = """I am the Pancho's MED Virtual Agent, a technical expert in the Marine Equipment Directive (MED).
         Answer the question based on the provided context.
         Context: {context}
         Question: {question}
         Answer:"""
         QA_CHAIN_PROMPT = PromptTemplate.from_template(template)
-        
-        # 6. Crear la cadena QA
+
+        # F. Crear la cadena QA (El motor final)
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
@@ -72,9 +99,9 @@ def inicializar_sistema():
             return_source_documents=True,
             chain_type_kwargs={"prompt": QA_CHAIN_PROMPT}
         )
-        
-        return qa_chain, "✅ Sistema listo"
-    
+
+        return qa_chain, "✅ System ready"
+
     except Exception as e:
         return None, f"❌ Error crítico: {str(e)}"
 
@@ -99,7 +126,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("¿En qué puedo ayudarte?"):
+if prompt := st.chat_input("Can I help you on MED Topic? Please kindly set your question here?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
