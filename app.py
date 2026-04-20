@@ -17,12 +17,13 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 st.set_page_config(page_title="MED Virtual Agent", page_icon="🚢", layout="wide")
 
 # API KEY
-api_key = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
-if not api_key:
-    st.error("⚠️ No se encontró la GOOGLE_API_KEY.")
-    st.stop()
+# Esta línea es la "llave maestra"
+api_key = os.environ.get("GOOGLE_API_KEY")
 
-genai.configure(api_key=api_key)
+if api_key:
+    genai.configure(api_key=api_key)
+else:
+    st.error("❌ No se encontró la GOOGLE_API_KEY. Configúrala en el panel de Render.")
 
 # --- SIDEBAR ---
 with st.sidebar:
