@@ -4,7 +4,6 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import streamlit as st
 import os
-from PIL import Image
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
@@ -14,31 +13,6 @@ import google.generativeai as genai
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="MED Virtual Agent", page_icon="🚢", layout="wide")
-
-# --- 2. ENCABEZADO Y TEXTOS DE PANCHO ---
-col1, col2 = st.columns([7, 3])
-
-with col1:
-    st.title("🚢 Pancho's MED Virtual Agent (V2.5)")
-    st.markdown("""
-Esta herramienta utiliza Inteligencia Artificial para consultar la **Directiva de Equipos Marinos (MED)** y las **Recomendaciones MarED**.
-""")
-    st.info("""
-**Master Pancho's Note:** I have instructed this agent with only documents and references I trust. 
-No worries if it does not know something; it will say so.
-""")
-    st.write("""
-I am a RAG Agent for MED. I have learned: **MED**, **MarED GEN-001** and **MarED GEN-010**.
-""")
-    st.caption("© 2026 Francisco Brossin. MIT License. Source code will be on GitHub in due time.")
-
-with col2:
-    image_path = 'rag-diagram.png'
-    if os.path.exists(image_path):
-        image = Image.open(image_path)
-        st.image(image, caption='Arquitectura RAG', use_container_width=True)
-
-st.divider()
 
 # API KEY
 api_key = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
@@ -53,13 +27,10 @@ with st.sidebar:
     st.title("⚓ MED Virtual Agent")
     st.markdown("---")
     st.info("""
-    **📜 Usage Note:** I am a RAG-based MED Expert Virtual Agent. My creator. my Master Francisco Broissin has trained me  and optimized for **semantic analysis** of the MED Directive and MarED Recommendations.
-
-	I've been designed to assist in research and cross-referencing concepts. I'm **not** intended for literal transcription of legal articles. For exact legal quotes or compliance citations, please always refer to the official source documents.
-
+    **📜 Usage Note:** I am a RAG-based MED Expert. Optimized for **semantic analysis** of the MED Directive.
     """)
 
-# --- INICIALIZACIÓN DEL SISTEMA (FUNCIÓN ÚNICA) ---
+# --- INICIALIZACIÓN DEL SISTEMA ---
 @st.cache_resource
 def inicializar_sistema():
     try:
@@ -71,16 +42,16 @@ def inicializar_sistema():
         
         # 2. Verificación de Carpeta
         if not os.path.exists(persist_dir):
-            return None, f"❌ Carpeta '{persist_dir}' no encontrada. Archivos: {os.listdir(base_path)}"
+            return None, f"❌ Carpeta '{persist_dir}' no encontrada."
 
-        # 3. Carga de DB
-        # vectorstore = Chroma(persist_directory=persist_dir, embedding_function=embeddings)
+        # 3. Carga de DB (con espacios consistentes)
         vectorstore = Chroma(
-    		persist_directory=persist_dir, 
-    		embedding_function=embeddings,
-    		collection_name="langchain"  # <--- Añade esto
-	)
-	retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+            persist_directory=persist_dir, 
+            embedding_function=embeddings,
+            collection_name="langchain"
+        )
+        
+        retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
         
         # 4. Modelo LLM
         llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=api_key, temperature=0.1)
@@ -93,7 +64,7 @@ def inicializar_sistema():
         Answer:"""
         QA_CHAIN_PROMPT = PromptTemplate.from_template(template)
         
-        # 6. Crear la cadena QA (Aquí es donde vivía el error antes)
+        # 6. Crear la cadena QA
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
@@ -108,7 +79,7 @@ def inicializar_sistema():
         return None, f"❌ Error crítico: {str(e)}"
 
 # --- CUERPO PRINCIPAL ---
-st.title("🚢 Pancho's MED Virtual Agent (V2.5)")
+st.title("🚢 Pancho's MED Virtual Agent")
 
 # Arrancamos el motor
 qa_chain, mensaje = inicializar_sistema()
@@ -117,7 +88,6 @@ if qa_chain is None:
     st.error(mensaje)
     st.stop()
 else:
-    # Mostramos éxito solo si el historial está vacío para no ensuciar
     if "messages" not in st.session_state or len(st.session_state.messages) == 0:
         st.success(mensaje)
 
@@ -129,7 +99,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("¿En qué puedo ayudarte con la normativa MED?"):
+if prompt := st.chat_input("¿En qué puedo ayudarte?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -137,7 +107,6 @@ if prompt := st.chat_input("¿En qué puedo ayudarte con la normativa MED?"):
     with st.chat_message("assistant"):
         with st.spinner("Consultando manuales..."):
             try:
-                # Usamos el qa_chain que inicializamos arriba
                 response = qa_chain.invoke({"query": prompt})
                 respuesta_texto = response["result"]
                 st.markdown(respuesta_texto)
